@@ -1,40 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# plyxl-bugs
 
-## Getting Started
+This repository is a Next.js app. The main page is the dashboard at
+[`/dashboard`](http://localhost:3000/dashboard); `/` redirects there.
 
-First, run the development server:
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000/dashboard>. Useful checks:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm run lint
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## The `/dashboard` route
 
-## Learn More
+`app/dashboard/page.tsx` composes the screen:
 
-To learn more about Next.js, take a look at the following resources:
+- A `SidebarProvider` wraps everything and sets `--sidebar-width: 19rem`.
+- `<AppSidebar />` is the left navigation.
+- `SidebarInset` contains the top header and all page content.
+- `<AppSidebar side="right" mobile={false} />` is the right panel.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The header has a breadcrumb (“Build Your Application / Data Fetching”) and
+**two separate triggers**: the left `SidebarTrigger` sits at the start, and the
+right `SidebarTrigger side="right"` sits at the end (desktop only). Pressing
+`⌘/Ctrl + B` toggles the left sidebar.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Sidebar state
 
-## Deploy on Vercel
+The two sidebars collapse independently. Their state is persisted in
+`localStorage` under `sidebar_state_left` and `sidebar_state_right`, so the
+layout you leave is the layout you get on your next visit. Storage is read via
+`useSyncExternalStore`, which also keeps multiple tabs in sync and falls back
+gracefully when storage is unavailable (e.g. private mode).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+On screens narrower than 768px, the left sidebar becomes a sheet. The right
+sidebar is explicitly `mobile={false}` so it does not stack a second sheet on
+top of it, and its trigger is hidden on mobile.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# plyxl-bugs
-# plyxl-bugs
-# plyxl-bugs
-# plyxl-bugs
+### Content sections
+
+Rendered in order inside `SidebarInset`:
+
+1. **`DndDemo`** — a mobile-style icon grid. Drag an icon onto another icon to
+   create a folder (which opens in rename mode with “Folder 1” selected), tap a
+   folder to open it, drag an icon out to move it back, and right-click a tile
+   for Rename/Delete. Folders cannot be nested. The same demo also has a
+   standalone page at `/dnd`.
+2. **`PlyxlBugsDemo`** — side-by-side bug reproductions with a Before/After
+   toggle per section: chat text overflow, clipped textarea placeholder, theme
+   picker labeling, and onboarding tooltip/status pill.
+3. **`PlyxlFixed`** — the corrected patterns for those cases in a single
+   reference layout with navigation, chat bubbles and a chat input.
+4. **`PlyxlMain`** — reusable chat pieces (`ChatBubble`, `ChatInput`) used by
+   the main panel reference.
+
+## File map (dashboard path)
+
+| File | Purpose |
+| --- | --- |
+| `app/dashboard/page.tsx` | The `/dashboard` layout, header, triggers and section order. |
+| `app/page.tsx` | Redirects `/` to `/dashboard`. |
+| `app/layout.tsx` | Root HTML shell, Geist fonts and global CSS. |
+| `app/globals.css` | Tailwind and shadcn theme tokens. |
+| `components/app-sidebar.tsx` | Shared left/right sidebar navigation (`side` prop). |
+| `components/ui/sidebar.tsx` | Sidebar primitives, independent toggles, persistence, mobile sheet. |
+| `components/ui/breadcrumb.tsx`, `separator.tsx`, `button.tsx`, `sheet.tsx`, `tooltip.tsx`, `input.tsx`, `skeleton.tsx` | shadcn primitives used by the dashboard and its sidebars. |
+| `hooks/use-mobile.ts` | 768px breakpoint detection via `useSyncExternalStore`. |
+| `lib/utils.ts` | The `cn()` class-name helper. |
+| `components/dnd-demo.tsx`, `lib/dnd-board.ts` | Icon-grid demo and its pure board operations. |
+| `components/plyxl-bugs-demo.tsx` | Bug reproductions with per-section Before/After toggles. |
+| `components/plyxl-fixed.tsx` | Fixed versions of those UI patterns. |
+| `components/plyxl-main.tsx` | Main chat panel and exported chat components. |
+| `components.json` | shadcn CLI configuration. |
